@@ -1,0 +1,17 @@
+qemu-system-aarch64 \
+	-M virt,highmem=on \
+	-accel hvf \
+	-m 8G \
+	-drive file=guix-system-vm-image-1.5.0.aarch64-linux.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap \
+	-device virtio-scsi-device \
+	-bios "$(brew --prefix qemu)/share/qemu/edk2-aarch64-code.fd" \
+	-cpu host \
+	-smp 4 \
+	-device virtio-net,netdev=vmnic \
+	-netdev user,id=vmnic \
+	-nographic \
+	-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=guixshare \
+	-nic user,hostfwd=tcp::2222-:2222 \
+	-device qemu-xhci \
+	-device usb-kbd \
+	-device usb-tablet
