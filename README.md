@@ -16,6 +16,8 @@ Then replace hardcoded pub key in `config.scm` in openssh-configuration from `~/
 
 `./qemu.sh`
 
+There is also `./qemu-vnc.sh` if you want to run GUI on official qcow2 image.
+
 `ssh -i ~/.ssh/guix_guest_ed25519 -p 2222 root@localhost`
 
 Or add to `~/.ssh/config`:
