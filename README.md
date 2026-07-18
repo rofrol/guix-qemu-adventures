@@ -10,7 +10,7 @@ Download qcow2 image from https://guix.gnu.org/en/download/.
 
 You may want to generate ssh key:
 
-`ssh-keygen -t ed25519 -C you@examp0le.com -f ~/.ssh/guix_guest_ed25519`.
+`ssh-keygen -t ed25519 -C you@example.com -f ~/.ssh/guix_guest_ed25519`.
 
 Then replace hardcoded pub key in `config.scm` in openssh-configuration from `~/.ssh/guix_guest_ed25519.pub`.
 
@@ -203,7 +203,9 @@ Works with `-nographic`. Does not work with GUI.
 
 Fingerprint of guest changed, so I am removing entries from `~/.ssh/known_hosts`:
 
-`ssh-keygen -R '[localhost]:2222'; ssh-keygen -R '[127.0.0.1]:2222''
+```
+ssh-keygen -R '[localhost]:2222'; ssh-keygen -R '[127.0.0.1]:2222'
+```
 
 - https://stackoverflow.com/questions/21383806/how-can-i-force-ssh-to-accept-a-new-host-fingerprint-from-the-command-line/53672867#53672867
 
@@ -219,7 +221,7 @@ Workaround is to add `--substitute-urls`.
 
 ## shutdown and reboot
 
-just run `shutdown` or `reboot`.
+Just run `shutdown` or `reboot`.
 
 ## reconfigure
 
