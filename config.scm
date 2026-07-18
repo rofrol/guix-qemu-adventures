@@ -70,6 +70,6 @@
                                                    ;; guix/serialization.scm:104:6: In procedure get-bytevector-n*:
                                                    ;; ERROR: 1. &nar-error:file: #f port: #<input-output: file 10>
                                                    ;; https://codeberg.org/guix/guix/issues/9996
-                                                   (substitute-urls '("https://bordeaux.guix.gnu.org")))))))
+                                                   (substitute-urls '("https://bordeaux.guix.gnu.org https://hydra-guix-129.guix.gnu.org")))))))
 
   (name-service-switch %mdns-host-lookup-nss))
