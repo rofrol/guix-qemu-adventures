@@ -68,14 +68,10 @@ Configuration for ki editor https://github.com/rofrol/dotfiles/blob/master/.conf
 Below can take 18 minues:
 
 ```
-time guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/shared/config.scm
+cp "$(time guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/shared/config.scm)" /mnt/shared
 ```
 
-I also saw this command to move or cp after success:
-
-```
-mv "$(guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/shared/config.scm)" /mnt/shared
-```
+You cannot mv as there would be error like `rm: cannot remove '/gnu/store/p4jlybc6fwmfl70izb1a4wf994rammrp-image.qcow2': Read-only file system`.
 
 And then conifg is in `/run/current-system/configuration.scm`.
 
