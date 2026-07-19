@@ -1,3 +1,5 @@
+;; -*- mode: scheme -*-
+
 (use-modules (gnu)
              (gnu services networking)
              (gnu services ssh)
@@ -48,6 +50,13 @@
 
                        %base-file-systems))
 
+  ;; Packages installed system-wide.  Users can also install packages
+  ;; under their own account: use 'guix search KEYWORD' to search
+  ;; for packages and 'guix install PACKAGE' to install a package.
+  ;; ncurses needed for tic
+  ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
+  (packages (append (list (specification->package "neovim")
+                          (specification->package "ncurses")) %base-packages))
   (services
    (cons* (service dhcpcd-service-type)
           (service openssh-service-type
