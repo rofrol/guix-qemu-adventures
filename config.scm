@@ -63,13 +63,13 @@
    (cons* (service dhcpcd-service-type)
           (service openssh-service-type
                    (openssh-configuration (openssh openssh-sans-x)
+                                          (port-number 2222)
                                           (password-authentication? #f)
                                           (permit-root-login 'prohibit-password)
                                           ;; /etc/ssh/authorized_keys.d/root
                                           (authorized-keys `(("root" ,(plain-file
                                                                        "authorized_keys"
-                                                                       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAkwW6AJsh/haG7pcBZx/aNfSdDPOxaN6JFV3flOEJh3 rofrol@gmail.com"))))
-                                          (port-number 2222)))
+                                                                       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAkwW6AJsh/haG7pcBZx/aNfSdDPOxaN6JFV3flOEJh3 rofrol@gmail.com"))))))
 
           ;; Install and run the current Guix rather than an older
           ;; snapshot.
