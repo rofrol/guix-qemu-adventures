@@ -5,7 +5,8 @@
              (gnu services ssh)
              ;; for current-guix
              (gnu packages package-management)
-             ;; for openssh-sans-x
+             ;; for refence openssh-sans-x, not package openssh-sans-x
+             ;; used in (openssh openssh-sans-x)
              (gnu packages ssh)
              ;; for package-version
              (guix packages))
@@ -55,8 +56,9 @@
   ;; for packages and 'guix install PACKAGE' to install a package.
   ;; ncurses needed for tic
   ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
-  (packages (append (list (specification->package "neovim")
-                          (specification->package "ncurses")) %base-packages))
+  ;; (packages (append (map specification->package (list "neovim" "ncurses")) %base-packages))
+  (packages (append (specifications->packages (list "neovim" "ncurses"))
+                    %base-packages))
   (services
    (cons* (service dhcpcd-service-type)
           (service openssh-service-type
