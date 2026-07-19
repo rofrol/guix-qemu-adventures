@@ -310,3 +310,5 @@ https://hydra-guix-129.guix.gnu.org/ ☀
   620.2 requests per second
   (continuous integration information unavailable)
 ```
+
+- https://libreplanet.org/wiki/Group:Guix/Mirrors
