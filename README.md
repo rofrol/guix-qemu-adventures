@@ -312,3 +312,13 @@ https://hydra-guix-129.guix.gnu.org/ ☀
 ```
 
 - https://libreplanet.org/wiki/Group:Guix/Mirrors
+
+## ghostty
+
+To make it better work with ghostty, we need to install ncurses package on guix, which gives tic program.
+
+Then on host we do `infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -`.
+
+> the terminfo authors have deliberately chosen to ship their own version of the terminfo definition under a different name (ghostty instead of xterm-ghostty), with their own modifications that make it substantially different from our own terminfo definition, so it wouldn't even work out-of-the-box like what we had expected. https://github.com/ghostty-org/ghostty/discussions/8268#discussioncomment-16744849
+
+- https://ghostty.org/docs/help/terminfo
