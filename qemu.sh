@@ -10,7 +10,7 @@ qemu-system-aarch64 \
 	-device virtio-net,netdev=vmnic \
 	-netdev user,id=vmnic \
 	-nographic \
-	-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=guixshare \
+	-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=share \
 	-nic user,hostfwd=tcp::2222-:2222 \
 	-device qemu-xhci \
 	-device usb-kbd \

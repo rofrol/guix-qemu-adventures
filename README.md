@@ -39,13 +39,13 @@ Host localhost
 
 qemu param:
 
-`-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=guixshare`
+`-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=share`
 
 inside guest
 
 ```
 mkdir -p /mnt/shared
-mount -t 9p -o trans=virtio guixshare /mnt/shared
+mount -t 9p -o trans=virtio share /mnt/shared
 ```
 
 ### Format guile file
@@ -228,7 +228,7 @@ time guix system reconfigure /mnt/shared/config.scm
 Needed `--skip-check` for `9p`:
 
 ```
-time guix system reconfigure --skip-checks /mnt/shared/config.scm
+time guix system reconfigure --skip-checks /mnt/share/config.scm
 ```
 
 ## Boot into older generations
@@ -252,7 +252,7 @@ fstrim -av
 rm -rf /root/.cache
 40  guix gc
 du -sxh /
-time guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/shared/config.scm
+time guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/share/config.scm
 shutdown
 ```
 
@@ -272,7 +272,9 @@ Look at `your vm > Edit > QEMU > Arguments` to see what arguments UTM pass to qe
 
 then in the guest:
 
-`mount -t 9p -o trans=virtio,version=9p2000.L,msize=104857600 share /mnt/share`
+```
+mount -t 9p -o trans=virtio,version=9p2000.L,msize=104857600 share /mnt/share
+```
 
 - UTM supports SPICE https://github.com/utmapp/UTM/blob/main/patches/spice-0.14.3.patch
 - https://docs.getutm.app/guest-support/linux/#macos-virtiofs
@@ -305,7 +307,8 @@ Set Network Mode to Emulated VLAN (Shared Network) (sometimes labelled as “NAT
 ## guix weather --substitute-urls
 
 ```
-root@bootstrap /mnt/shared# guix weather --substitute-urls="https://bordeaux.guix.gnu.org"                                                                                  WARNING: (gnu packages linux): `libcamera-minimal' imported from both (gnu packages networking) and (gnu packages photo)                                                    WARNING: (gnu packages code): `packcc' imported from both (gnu packages c) and (gnu packages compiler-tools)                                                                WARNING: (gnu packages chemistry): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
+
+root@bootstrap /mnt/share# guix weather --substitute-urls="https://bordeaux.guix.gnu.org" WARNING: (gnu packages linux): `libcamera-minimal' imported from both (gnu packages networking) and (gnu packages photo)                                                    WARNING: (gnu packages code): `packcc' imported from both (gnu packages c) and (gnu packages compiler-tools) WARNING: (gnu packages chemistry): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
 WARNING: (gnu packages hardware): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
 WARNING: (gnu packages electronics): `orangeduck-mpc' imported from both (gnu packages c) and (gnu packages compiler-tools)
 computing 32,656 package derivations for aarch64-linux...
@@ -317,7 +320,7 @@ https://bordeaux.guix.gnu.org ☀
   0.003 seconds per request (97.5 seconds in total)
   394.9 requests per second
   'https://bordeaux.guix.gnu.org/api/queue?nr=1000' returned 502 ("Bad Gateway")
-root@bootstrap /mnt/shared# guix weather --substitute-urls="https://hydra-guix-129.guix.gnu.org/"
+root@bootstrap /mnt/share# guix weather --substitute-urls="https://hydra-guix-129.guix.gnu.org/"
 WARNING: (gnu packages linux): `libcamera-minimal' imported from both (gnu packages networking) and (gnu packages photo)
 WARNING: (gnu packages code): `packcc' imported from both (gnu packages c) and (gnu packages compiler-tools)
 WARNING: (gnu packages chemistry): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
@@ -326,13 +329,13 @@ WARNING: (gnu packages electronics): `orangeduck-mpc' imported from both (gnu pa
 computing 32,657 package derivations for aarch64-linux...
 looking for 38,504 store items on https://hydra-guix-129.guix.gnu.org/...
 https://hydra-guix-129.guix.gnu.org/ ☀
-  95.2% substitutes available (36,639 out of 38,504)
-  88,054.0 MiB of nars (compressed)
-  326,958.2 MiB on disk (uncompressed)
-  0.002 seconds per request (62.1 seconds in total)
-  620.2 requests per second
-  (continuous integration information unavailable)
-root@bootstrap /mnt/shared# guix weather --substitute-urls="https://hydra-guix-129.guix.gnu.org/"
+95.2% substitutes available (36,639 out of 38,504)
+88,054.0 MiB of nars (compressed)
+326,958.2 MiB on disk (uncompressed)
+0.002 seconds per request (62.1 seconds in total)
+620.2 requests per second
+(continuous integration information unavailable)
+root@bootstrap /mnt/share# guix weather --substitute-urls="https://hydra-guix-129.guix.gnu.org/"
 WARNING: (gnu packages linux): `libcamera-minimal' imported from both (gnu packages networking) and (gnu packages photo)
 WARNING: (gnu packages code): `packcc' imported from both (gnu packages c) and (gnu packages compiler-tools)
 WARNING: (gnu packages chemistry): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
@@ -341,12 +344,13 @@ WARNING: (gnu packages electronics): `orangeduck-mpc' imported from both (gnu pa
 computing 32,657 package derivations for aarch64-linux...
 looking for 38,504 store items on https://hydra-guix-129.guix.gnu.org/...
 https://hydra-guix-129.guix.gnu.org/ ☀
-  95.2% substitutes available (36,639 out of 38,504)
-  88,054.0 MiB of nars (compressed)
-  326,958.2 MiB on disk (uncompressed)
-  0.002 seconds per request (62.1 seconds in total)
-  620.2 requests per second
-  (continuous integration information unavailable)
+95.2% substitutes available (36,639 out of 38,504)
+88,054.0 MiB of nars (compressed)
+326,958.2 MiB on disk (uncompressed)
+0.002 seconds per request (62.1 seconds in total)
+620.2 requests per second
+(continuous integration information unavailable)
+
 ```
 
 - https://libreplanet.org/wiki/Group:Guix/Mirrors
@@ -360,3 +364,7 @@ Then on host we do `infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
 > the terminfo authors have deliberately chosen to ship their own version of the terminfo definition under a different name (ghostty instead of xterm-ghostty), with their own modifications that make it substantially different from our own terminfo definition, so it wouldn't even work out-of-the-box like what we had expected. https://github.com/ghostty-org/ghostty/discussions/8268#discussioncomment-16744849
 
 - https://ghostty.org/docs/help/terminfo
+
+```
+
+```
