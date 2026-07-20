@@ -260,9 +260,47 @@ on host:
 
 `qemu-img convert -O qcow2 -c guix-system-vm-image-1.5.0.aarch64-linux.qcow2 shrinked.qcow2`
 
-## Spice on macos from homebrew
+## SPICE on macOS from homebrew
 
-qemu from homebrew does not support Spice. Even when build from source with `brew install --build-from-source qemu`. It does not have spice server, only spice protocol.
+tldr; Use UTM as it supports SPICE on macOS out-of-the-box. Just qemu does not. SPICE is better than VNC. With UTM you will also get directory sharing with VirtFS and clipboard sharing. But you must change from default SPICE WebDAV to VirtFS for directory sharing in VM settings. To change what directory is shared you have to restart VM. Port Forwarding works in Emulated Mode.
+
+Look at `your vm > Edit > QEMU > Arguments` to see what arguments UTM pass to qemu.
+
+### Directory sharing
+
+`your vm > Edit > Sharing > Directory Share Mode > VirtFS`
+
+then in the guest:
+
+`mount -t 9p -o trans=virtio,version=9p2000.L,msize=104857600 share /mnt/share`
+
+- UTM supports SPICE https://github.com/utmapp/UTM/blob/main/patches/spice-0.14.3.patch
+- https://docs.getutm.app/guest-support/linux/#macos-virtiofs
+- When using the QEMU backend, VirtFS is used instead, which does not use such a parent folder and requires restarting the VM to change shares iirc. https://news.ycombinator.com/item?id=36845869
+- Bind mounts and file sharing: It uses VirtioFS which isn't affected by sshfs consistency issues, plus caching and optimizations to give it an edge. https://news.ycombinator.com/item?id=36675039
+- https://docs.getutm.app/guest-support/linux/#macos-virtiofs
+- https://docs.getutm.app/settings-qemu/sharing/
+- https://docs.getutm.app/guest-support/sharing/directory/
+
+### Port Forwarding:
+
+Set Network Mode to Emulated VLAN (Shared Network) (sometimes labelled as “NAT”). Once you do that, a Port Forward option will appear below Network.
+
+- https://dev.to/smyekh/completing-your-local-oci-lab-a-guide-to-port-forwarding-in-utm-hgp
+- https://docs.getutm.app/settings-qemu/devices/network/port-forwarding/
+
+### Potential alternatives to UTM which support SPICE
+
+- qemu from homebrew does not support Spice. Even when build from source with `brew install --build-from-source qemu`. It does not have spice server, only spice protocol. QEMU needs the spice-protocol and spice-server library to compile with SPICE support. While the spice-protocol package is available for macOS, I can't seem to find a precompiled package of spice-server https://stackoverflow.com/questions/59636198/how-to-compile-qemu-with-spice-support-for-macos. Though there is possibility to have qemu with SPICE without UTM, but I have not tested it. https://github.com/avoidik/homebrew-qemu-spice and
+  - You need to add a dependency on spice-server to qemu too https://github.com/orgs/Homebrew/discussions/5266#discussioncomment-9033465
+- https://github.com/jeffreywildman/homebrew-virt-manager
+  - https://stackoverflow.com/questions/3921814/is-there-a-virt-manager-alternative-for-mac-os-x
+  - ran brew reinstall gobject-introspection which fixed the issue with the unsupported graphics type https://github.com/jeffreywildman/homebrew-virt-manager/issues/200#issuecomment-1492043260
+  - https://www.romanstefko.com/2025/11/connect-to-proxmox-spice-console-virt-viewer-on-macos/
+  - Proxmox https://gist.github.com/tomdaley92/789688fc68e77477d468f7b9e59af51c
+- virt-manager and virsh https://johnsiu.com/blog/macos-kvm-remote-connect/
+- Connect to virtual machines using SPICE https://formulae.brew.sh/cask/remoteviewer
+- A homebrew tap for qemu with support for 3d accelerated guests https://github.com/startergo/homebrew-qemu-virgl
 
 ## guix weather --substitute-urls
 
