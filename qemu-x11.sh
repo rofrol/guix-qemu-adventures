@@ -13,7 +13,7 @@ qemu-system-aarch64 \
 	-display cocoa,zoom-to-fit=on,show-cursor=on \
 	-display default,show-cursor=on \
 	-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=share \
-	-nic user,hostfwd=tcp::2222-:2222 \
+	-nic user,hostfwd=tcp::2223-:2223 \
 	-device qemu-xhci \
 	-device usb-kbd \
 	-device usb-tablet
