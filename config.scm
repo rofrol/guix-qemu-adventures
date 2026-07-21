@@ -42,7 +42,7 @@
                        ;; need to add --skip-check to reconfigure
                        (file-system
                          (mount-point "/mnt/share")
-                         (device "guixshare")
+                         (device "share")
                          (type "9p")
                          (options "trans=virtio,version=9p2000.L")
                          ;; will not boot without it
