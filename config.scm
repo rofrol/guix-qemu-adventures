@@ -41,7 +41,7 @@
 
                        ;; need to add --skip-check to reconfigure
                        (file-system
-                         (mount-point "/mnt/shared")
+                         (mount-point "/mnt/share")
                          (device "guixshare")
                          (type "9p")
                          (options "trans=virtio,version=9p2000.L")
