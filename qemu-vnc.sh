@@ -12,7 +12,7 @@ qemu-system-aarch64 \
 	-device virtio-gpu-pci,xres=3024,yres=1964 \
 	-display cocoa,zoom-to-fit=on,show-cursor=on \
 	-display default,show-cursor=on \
-	-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=guixshare \
+	-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=share \
 	-nic user,hostfwd=tcp::2222-:2222 \
 	-device qemu-xhci \
 	-device usb-kbd \
