@@ -102,9 +102,10 @@ Run '[1;37minfo guix[0m' to browse documentation.
                           ;; Auto-started script providing SPICE dynamic resizing for
                           ;; Xfce (see:
                           ;; https://gitlab.xfce.org/xfce/xfce4-settings/-/issues/142).
-                          x-resize
-                          (specification->package "neovim")
-                          (specification->package "ncurses")) %base-packages))
+                          x-resize)
+                    (specifications->packages "neovim" "curl"
+                                              ;; ncurses needed for tic which is needed to upload terminfo from ghostty
+                                              "ncurses") %base-packages))
 
   (services
    (append (list (service xfce-desktop-service-type)
