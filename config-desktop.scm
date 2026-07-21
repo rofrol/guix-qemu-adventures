@@ -43,10 +43,10 @@ Run '[1;37minfo guix[0m' to browse documentation.
 "))
 
 (operating-system
-  (host-name "gnu")
-  (timezone "Etc/UTC")
+  (host-name "Guix Desktop")
   (locale "en_US.utf8")
-  (keyboard-layout (keyboard-layout "us" "altgr-intl"))
+  (timezone "Europe/Warsaw")
+  (keyboard-layout (keyboard-layout "pl"))
 
   ;; Label for the GRUB boot menu.
   (label (string-append "GNU Guix "
