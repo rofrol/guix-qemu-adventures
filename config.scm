@@ -58,8 +58,9 @@
   ;; ncurses needed for tic
   ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
   ;; (packages (append (map specification->package (list "neovim" "ncurses")) %base-packages))
-  (packages (append (specifications->packages (list "neovim" "ncurses" "curl"))
-                    %base-packages))
+  (packages (append (specifications->packages "neovim" "curl"
+                                              ;; ncurses needed for tic which is needed to upload terminfo from ghostty
+                                              "ncurses") %base-packages))
   (services
    (cons* (service dhcpcd-service-type)
           (service nginx-service-type
