@@ -377,4 +377,11 @@ After nginx is started, if you change something in nginx configuration you need 
 
 You may test serving http site with `curl localhost`.
 
+check logs:
+
+```
+cat /var/log/nginx/access.log
+cat /var/log/nginx/error.log
+```
+
 - https://guix.gnu.org/manual/1.5.0/en/html_node/Web-Services.html
