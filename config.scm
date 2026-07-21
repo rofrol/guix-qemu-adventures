@@ -3,6 +3,7 @@
 (use-modules (gnu)
              (gnu services networking)
              (gnu services ssh)
+             (gnu services web)
              ;; for current-guix
              (gnu packages package-management)
              ;; for refence openssh-sans-x, not package openssh-sans-x
@@ -57,10 +58,17 @@
   ;; ncurses needed for tic
   ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
   ;; (packages (append (map specification->package (list "neovim" "ncurses")) %base-packages))
-  (packages (append (specifications->packages (list "neovim" "ncurses"))
+  (packages (append (specifications->packages (list "neovim" "ncurses" "curl"))
                     %base-packages))
   (services
    (cons* (service dhcpcd-service-type)
+          (service nginx-service-type
+                   (nginx-configuration (server-blocks (list (nginx-server-configuration
+                                                              (listen '("80"))
+                                                              (server-name '("example.com"))
+                                                              (root
+                                                               "/srv/http/example.com"))))))
+
           (service openssh-service-type
                    (openssh-configuration (openssh openssh-sans-x)
                                           (port-number 2222)

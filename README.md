@@ -365,6 +365,16 @@ Then on host we do `infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
 
 - https://ghostty.org/docs/help/terminfo
 
-```
+## nginx
 
-```
+add `(listen '("90"))`, otherwise nginx will also listen on on 443, and if you have no certbot set, starting will fail. Look at generated configuration at `/etc/nginx/nginx.conf` if there is listen on 443 port.
+
+Check configuration with `nginx -t -c /etc/nginx/nginx.conf`.
+
+`herd status nginx` to check if nginx successfuly started.
+
+After nginx is started, if you change something in nginx configuration you need to run `herd reload nginx`.
+
+You may test serving http site with `curl localhost`.
+
+- https://guix.gnu.org/manual/1.5.0/en/html_node/Web-Services.html
