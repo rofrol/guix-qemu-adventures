@@ -11,13 +11,25 @@
              (ice-9 match)
              (guix channels)
              (gnu system image)
-	     (guix packages))
-(use-service-modules desktop mcron networking spice ssh xorg sddm)
-(use-package-modules bootloaders fonts
-                     package-management xdisorg xorg ssh)
+             (guix packages))
+(use-service-modules desktop
+                     mcron
+                     networking
+                     spice
+                     ssh
+                     xorg
+                     sddm)
+(use-package-modules bootloaders
+                     fonts
+                     package-management
+                     xdisorg
+                     xorg
+                     ssh)
 
-(define vm-image-motd (plain-file "motd" "
-\x1b[1;37mThis is the GNU system.  Welcome!\x1b[0m
+(define vm-image-motd
+  (plain-file "motd"
+   "
+[1;37mThis is the GNU system.  Welcome![0m
 
 This instance of Guix is a template for virtualized environments.
 You can reconfigure the whole system by adjusting /etc/config.scm
@@ -25,10 +37,9 @@ and running:
 
   guix system reconfigure /etc/config.scm
 
-Run '\x1b[1;37minfo guix\x1b[0m' to browse documentation.
+Run '[1;37minfo guix[0m' to browse documentation.
 
-\x1b[1;33mConsider setting a password for the 'root' and 'guest' \
-accounts.\x1b[0m
+[1;33mConsider setting a password for the 'root' and 'guest' accounts.[0m
 "))
 
 (operating-system
@@ -45,14 +56,12 @@ accounts.\x1b[0m
   (firmware '())
 
   ;; On AArch64, support SCSI CDROMs and HDs.
-  (initrd-modules (cons* "sd_mod" "sr_mod"
-                         %base-initrd-modules))
+  (initrd-modules (cons* "sd_mod" "sr_mod" %base-initrd-modules))
 
-  (bootloader
-    (bootloader-configuration
-      (bootloader grub-efi-bootloader)
-      (targets '("/boot/efi"))
-      (terminal-outputs '(console))))
+  (bootloader (bootloader-configuration
+                (bootloader grub-efi-bootloader)
+                (targets '("/boot/efi"))
+                (terminal-outputs '(console))))
   (file-systems (cons* (file-system
                          (mount-point "/")
                          (device (file-system-label root-label))
@@ -60,63 +69,61 @@ accounts.\x1b[0m
                        (file-system
                          (mount-point "/boot/efi")
                          (device (file-system-label "GNU-ESP"))
-                         (type "vfat"))
-                       %base-file-systems))
+                         (type "vfat")) %base-file-systems))
 
   (users (cons (user-account
-                (name "guest")
-                (comment "GNU Guix Live")
-                (password "")           ;no password
-                (group "users")
-                (supplementary-groups '("wheel" "netdev"
-                                        "audio" "video")))
+                 (name "guest")
+                 (comment "GNU Guix Live")
+                 (password "") ;no password
+                 (group "users")
+                 (supplementary-groups '("wheel" "netdev" "audio" "video")))
                %base-user-accounts))
 
   ;; Our /etc/sudoers file.  Since 'guest' initially has an empty password,
   ;; allow for password-less sudo.
-  (sudoers-file (plain-file "sudoers" "\
-root ALL=(ALL) ALL
-%wheel ALL=NOPASSWD: ALL\n"))
+  (sudoers-file (plain-file "sudoers" "root ALL=(ALL) ALL
+%wheel ALL=NOPASSWD: ALL
+"))
 
   (pam-services
    ;; Explicitly allow for empty passwords.
    (base-pam-services #:allow-empty-passwords? #t))
 
-  (packages
-   (append (list font-bitstream-vera
-                 ;; Auto-started script providing SPICE dynamic resizing for
-                 ;; Xfce (see:
-                 ;; https://gitlab.xfce.org/xfce/xfce4-settings/-/issues/142).
-                 x-resize (specification->package "neovim") (specification->package "ncurses"))
-           %base-packages))
+  (packages (append (list font-bitstream-vera
+                          ;; Auto-started script providing SPICE dynamic resizing for
+                          ;; Xfce (see:
+                          ;; https://gitlab.xfce.org/xfce/xfce4-settings/-/issues/142).
+                          x-resize
+                          (specification->package "neovim")
+                          (specification->package "ncurses")) %base-packages))
 
   (services
    (append (list (service xfce-desktop-service-type)
 
                  ;; Choose SLiM, which is lighter than the default GDM.
                  (service slim-service-type
-                          (slim-configuration
-                           (auto-login? #t)
-                           (default-user "guest")
-                           (xorg-configuration
-                            (xorg-configuration
-                             ;; The QXL virtual GPU driver is added to provide
-                             ;; a better SPICE experience.
-                              (modules (cons xf86-video-qxl
-                                             %default-xorg-modules))
-                             (keyboard-layout keyboard-layout)))))
+                          (slim-configuration (auto-login? #t)
+                                              (default-user "guest")
+                                              (xorg-configuration (xorg-configuration
+                                                                   ;; The QXL virtual GPU driver is added to provide
+                                                                   ;; a better SPICE experience.
+                                                                   (modules (cons
+                                                                             xf86-video-qxl
+                                                                             %default-xorg-modules))
+                                                                   (keyboard-layout
+                                                                    keyboard-layout)))))
 
                  ;; Uncomment the line below to add an SSH server.
-                 ;;(service openssh-service-type)
-		 (service openssh-service-type
-                   (openssh-configuration (openssh openssh-sans-x)
-                                          (port-number 2222)
-                                          (password-authentication? #f)
-                                          (permit-root-login 'prohibit-password)
-                                          ;; /etc/ssh/authorized_keys.d/root
-                                          (authorized-keys `(("root" ,(plain-file
-                                                                       "authorized_keys"
-                                                                       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAkwW6AJsh/haG7pcBZx/aNfSdDPOxaN6JFV3flOEJh3 rofrol@gmail.com"))))))
+                 ;; (service openssh-service-type)
+                 (service openssh-service-type
+                          (openssh-configuration (openssh openssh-sans-x)
+                                                 (port-number 2223)
+                                                 (password-authentication? #f)
+                                                 (permit-root-login 'prohibit-password)
+                                                 ;; /etc/ssh/authorized_keys.d/root
+                                                 (authorized-keys `(("root" ,(plain-file
+                                                                              "authorized_keys"
+                                                                              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAkwW6AJsh/haG7pcBZx/aNfSdDPOxaN6JFV3flOEJh3 rofrol@gmail.com"))))))
 
                  ;; Add support for the SPICE protocol, which enables dynamic
                  ;; resizing of the guest screen resolution, clipboard
@@ -140,17 +147,17 @@ root ALL=(ALL) ALL
                                 (service-type-name type)))))
                    (modify-services %desktop-services
                      (login-service-type config =>
-                                         (login-configuration
-                                          (inherit config)
-                                          (motd vm-image-motd)))
+                                         (login-configuration (inherit config)
+                                                              (motd
+                                                               vm-image-motd)))
 
                      ;; Install and run the current Guix rather than an older
                      ;; snapshot.
                      (guix-service-type config =>
-                                        (guix-configuration
-                                         (inherit config)
-					 (substitute-urls '("https://bordeaux.guix.gnu.org https://hydra-guix-129.guix.gnu.org"))
-                                         (guix (current-guix))))))))
+                                        (guix-configuration (inherit config)
+                                                            (substitute-urls '
+                                                                             ("https://bordeaux.guix.gnu.org https://hydra-guix-129.guix.gnu.org"))
+                                                            (guix (current-guix))))))))
 
   ;; Allow resolution of '.local' host names with mDNS.
   (name-service-switch %mdns-host-lookup-nss))
