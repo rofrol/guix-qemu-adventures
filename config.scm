@@ -6,7 +6,7 @@
              (gnu services web)
              ;; for current-guix
              (gnu packages package-management)
-             ;; for refence openssh-sans-x, not package openssh-sans-x
+             ;; for openssh-sans-x reference, not package openssh-sans-x
              ;; used in (openssh openssh-sans-x)
              (gnu packages ssh)
              ;; for package-version
@@ -55,11 +55,9 @@
   ;; Packages installed system-wide.  Users can also install packages
   ;; under their own account: use 'guix search KEYWORD' to search
   ;; for packages and 'guix install PACKAGE' to install a package.
-  ;; ncurses needed for tic
-  ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
-  ;; (packages (append (map specification->package (list "neovim" "ncurses")) %base-packages))
   (packages (append (specifications->packages "neovim" "curl"
-                                              ;; ncurses needed for tic which is needed to upload terminfo from ghostty
+                                              ;; ncurses needed for tic, which is needed to upload terminfo from ghostty
+                                              ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
                                               "ncurses") %base-packages))
   (services
    (cons* (service dhcpcd-service-type)
