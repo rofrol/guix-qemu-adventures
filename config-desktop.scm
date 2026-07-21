@@ -69,7 +69,16 @@ Run '[1;37minfo guix[0m' to browse documentation.
                        (file-system
                          (mount-point "/boot/efi")
                          (device (file-system-label "GNU-ESP"))
-                         (type "vfat")) %base-file-systems))
+                         (type "vfat"))
+                       ;; need to add --skip-check to reconfigure
+                       (file-system
+                         (mount-point "/mnt/share")
+                         (device "guixshare")
+                         (type "9p")
+                         (options "trans=virtio,version=9p2000.L")
+                         ;; will not boot without it
+                         (needed-for-boot? #f)
+                         (create-mount-point? #t)) %base-file-systems))
 
   (users (cons (user-account
                  (name "guest")
