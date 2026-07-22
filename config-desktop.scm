@@ -43,7 +43,7 @@ Run '[1;37minfo guix[0m' to browse documentation.
 "))
 
 (operating-system
-  (host-name "Guix Desktop")
+  (host-name "Guix-Desktop")
   (locale "en_US.utf8")
   (timezone "Europe/Warsaw")
   (keyboard-layout (keyboard-layout "pl"))
@@ -103,10 +103,12 @@ Run '[1;37minfo guix[0m' to browse documentation.
                           ;; Xfce (see:
                           ;; https://gitlab.xfce.org/xfce/xfce4-settings/-/issues/142).
                           x-resize)
-                    (specifications->packages "neovim" "curl"
-                                              ;; ncurses needed for tic, which is needed to upload terminfo from ghostty
-                                              ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
-                                              "ncurses") %base-packages))
+                    (specifications->packages (list "neovim"
+                                                    "curl"
+                                                    "icecat"
+                                                    ;; ncurses needed for tic, which is needed to upload terminfo from ghostty
+                                                    ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
+                                                    "ncurses")) %base-packages))
 
   (services
    (append (list (service xfce-desktop-service-type)

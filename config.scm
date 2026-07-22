@@ -55,10 +55,10 @@
   ;; Packages installed system-wide.  Users can also install packages
   ;; under their own account: use 'guix search KEYWORD' to search
   ;; for packages and 'guix install PACKAGE' to install a package.
-  (packages (append (specifications->packages "neovim" "curl"
-                                              ;; ncurses needed for tic, which is needed to upload terminfo from ghostty
-                                              ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
-                                              "ncurses") %base-packages))
+  (packages (append (specifications->packages (list "neovim" "curl"
+                                                    ;; ncurses needed for tic, which is needed to upload terminfo from ghostty
+                                                    ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
+                                                    "ncurses")) %base-packages))
   (services
    (cons* (service dhcpcd-service-type)
           (service nginx-service-type
