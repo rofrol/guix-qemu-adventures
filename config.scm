@@ -4,7 +4,7 @@
              (gnu services networking)
              (gnu services ssh)
              (gnu services web)
-             ;; for current-guix
+             ;; for current-guix and (package-version guix)
              (gnu packages package-management)
              ;; for openssh-sans-x reference, not package openssh-sans-x
              ;; used in (openssh openssh-sans-x)
@@ -85,7 +85,7 @@
           (modify-services %base-services
             (guix-service-type config =>
                                (guix-configuration (inherit config)
-                                                   (guix (current-guix))
+                                                   ;; (guix (current-guix))
                                                    ;; default failed for subsitions on QEMU/aarch64 when guix pull:
                                                    ;; guix/serialization.scm:104:6: In procedure get-bytevector-n*:
                                                    ;; ERROR: 1. &nar-error:file: #f port: #<input-output: file 10>
