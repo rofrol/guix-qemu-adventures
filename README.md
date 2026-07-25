@@ -385,3 +385,10 @@ cat /var/log/nginx/error.log
 ```
 
 - https://guix.gnu.org/manual/1.5.0/en/html_node/Web-Services.html
+
+## find in what module package is
+
+```
+guix show ncurses | grep location
+guix package -A ncurses
+```
