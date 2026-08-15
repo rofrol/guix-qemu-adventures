@@ -70,6 +70,7 @@
                                                     "ncurses")) %base-packages))
   (services
    (cons* (service dhcpcd-service-type)
+          (service ntp-service-type)
           (service nginx-service-type
                    (nginx-configuration (server-blocks (list (nginx-server-configuration
                                                               ;; if you do not specify port, it will also listen on 443,
