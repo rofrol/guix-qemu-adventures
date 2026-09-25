@@ -243,22 +243,13 @@ You need to add `discard=unmap,detect-zeroes=unmap` to qemu params:
 
 on guest:
 
-```
-du -sxh /
-du -xh / --max-depth=2 2>/dev/null | sort -rh | head -30
-guix system delete-generations
-guix package --delete-generations
-fstrim -av
-rm -rf /root/.cache
-40  guix gc
-du -sxh /
-time guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/share/config.scm
-shutdown
-```
+`/mnt/share/shrink-guest.sh` and then `shutdown`
 
 on host:
 
-`qemu-img convert -O qcow2 -c guix-system-vm-image-1.5.0.aarch64-linux.qcow2 shrinked.qcow2`
+`./shrink-qcow2.sh` (writes `*-shrinked.qcow2` next to image) or `./shrink-qcow2.sh --in-place` (replaces image, symlink is kept).
+
+It does `qemu-img convert -O qcow2 -c image.qcow2 shrinked.qcow2`.
 
 ## SPICE on macOS from homebrew
 
