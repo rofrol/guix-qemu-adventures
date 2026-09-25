@@ -1,29 +1,47 @@
 # guix-qemu-adventures
 
-My adventures running qcow2 image on macos.
+My adventures running a Guix System aarch64 qcow2 image with QEMU on macOS (Apple Silicon).
 
-## Run
+## Files
 
-`brew install qemu`
+| File | What it is |
+| --- | --- |
+| `qemu.sh` | run VM headless (`-nographic`), ssh on port 2222 |
+| `qemu-desktop.sh` | run VM with GUI (cocoa display), ssh on port 2223 |
+| `config.scm` | system config for headless VM (sshd on 2222, 9p share at `/mnt/share`, substitute urls) |
+| `config-desktop.scm` | system config for desktop VM (sshd on 2223, SPICE) |
+| `reconfigure.sh` | run in guest: check substitutes, build and reconfigure system from `/mnt/share/config.scm` |
+| `shrink-guest.sh` | run in guest: delete generations, gc, fstrim (see [Shrink qcow2](#shrink-qcow2)) |
+| `shrink-qcow2.sh` | run on host: recompress qcow2 (see [Shrink qcow2](#shrink-qcow2)) |
+| `test-mirrors.sh` | measure connect time to substitute servers |
+
+Both `qemu*.sh` run `guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2`. For me it is a symlink to image built with `config.scm` (see [Build image](#build-image)). For a start you can point it to official image.
+
+## Quick start
+
+```sh
+brew install qemu
+```
 
 Download qcow2 image from https://guix.gnu.org/en/download/.
 
-You may want to generate ssh key:
+Generate ssh key:
 
-`ssh-keygen -t ed25519 -C you@example.com -f ~/.ssh/guix_guest_ed25519`.
+```sh
+ssh-keygen -t ed25519 -C you@example.com -f ~/.ssh/guix_guest_ed25519
+```
 
-Then replace hardcoded pub key in `config.scm` in openssh-configuration from `~/.ssh/guix_guest_ed25519.pub`.
+Then replace hardcoded public key in `openssh-configuration` in `config.scm` (and `config-desktop.scm`) with content of `~/.ssh/guix_guest_ed25519.pub`.
 
-`./qemu.sh`
+```sh
+./qemu.sh
+ssh -i ~/.ssh/guix_guest_ed25519 -p 2222 root@localhost
+```
 
-There is also `./qemu-vnc.sh` if you want to run GUI on official qcow2 image.
-
-`ssh -i ~/.ssh/guix_guest_ed25519 -p 2222 root@localhost`
-
-Or add to `~/.ssh/config`:
+Or add to `~/.ssh/config` (not `Host localhost`, as it would apply to every ssh to localhost):
 
 ```
-Host localhost
+Host guix-vm
     HostName localhost
     Port 2222
     User root
@@ -31,30 +49,62 @@ Host localhost
     IdentitiesOnly yes
 ```
 
-`ssh -p 2222 root@localhost`
+and then `ssh guix-vm`.
 
-## Log
+Clipboard (copy and paste) works with `-nographic` (`qemu.sh`). Does not work with GUI (`qemu-desktop.sh`).
 
-### Mount local directory into qemu instance
+Shutdown and reboot: just run `shutdown` or `reboot` in guest.
 
-qemu param:
+## Mount local directory into guest
 
-`-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=share`
-
-inside guest
+`qemu*.sh` share current directory with:
 
 ```
-mkdir -p /mnt/shared
-mount -t 9p -o trans=virtio share /mnt/shared
+-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=share
 ```
+
+`config.scm` already mounts it at `/mnt/share`. On official image mount it manually in guest:
+
+```sh
+mkdir -p /mnt/share
+mount -t 9p -o trans=virtio,version=9p2000.L share /mnt/share
+```
+
+## Guest system
+
+### Reconfigure
+
+```sh
+time guix system reconfigure --skip-checks /mnt/share/config.scm
+```
+
+`--skip-checks` is needed for `9p` file system. Or run `/mnt/share/reconfigure.sh`.
+
+Current config is then in `/run/current-system/configuration.scm`.
+
+### Boot into older generations
+
+`reboot` and choose in grub menu `GNU system, old configurations...`.
+
+### Build image
+
+Below can take 18 minutes:
+
+```sh
+cp "$(time guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/share/config.scm)" /mnt/share
+```
+
+You cannot `mv`, there would be error like `rm: cannot remove '/gnu/store/p4jlybc6fwmfl70izb1a4wf994rammrp-image.qcow2': Read-only file system`.
+
+`--image-size` is important because official qcow2 has max 2.6 GB. Check it with `qemu-img info image.qcow2`.
 
 ### Format guile file
 
-```
+```sh
 guix style --whole-file config.scm
 ```
 
-I have made guile script that connects to qemu guest and formats it remotely and gets back result back:
+I have made guile script that connects to qemu guest, formats file remotely and gets result back:
 
 https://github.com/rofrol/dotfiles/blob/master/scripts/guix-style.scm
 
@@ -63,118 +113,44 @@ Configuration for ki editor https://github.com/rofrol/dotfiles/blob/master/.conf
 - https://guix.gnu.org/manual/1.5.0/en/html_node/Formatting-Code.html
 - https://guix.gnu.org/manual/1.5.0/en/html_node/Invoking-guix-style.html
 
-## build
+### Find in what module package is
 
-Below can take 18 minues:
-
+```sh
+guix show ncurses | grep location
+guix package -A ncurses
 ```
-cp "$(time guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/shared/config.scm)" /mnt/shared
-```
 
-You cannot mv as there would be error like `rm: cannot remove '/gnu/store/p4jlybc6fwmfl70izb1a4wf994rammrp-image.qcow2': Read-only file system`.
+## Disk
 
-And then conifg is in `/run/current-system/configuration.scm`.
+### Enlarge qcow2
 
-`--image-size` is important because official qcow2 has max 2.6 GB limit. Get this info with `qemu-img info image.qcow2`.
+Official image got full after `guix pull`, and `guix gc` did not help, so I had to delete something:
 
-## Enlarge qcow2
-
-Image get full with `guix pull` and `guix gc` did not work so I had to delete something.
-
-```
+```sh
 du -xh / --max-depth=2 2>/dev/null | sort -rh | head -30
 rm -rf /root/.cache/guix
 ```
 
-Still too little space for `git pull` but I thankfully managed to install parted.
+`/gnu/store` was 1.9G and `/root/.cache` 548M out of 2.5G. Still too little space for `guix pull`, but thankfully I managed to install parted.
 
-```
-$ qemu-img info guix-system-vm-image-1.5.0.aarch64-linux.qcow2
-image: guix-system-vm-image-1.5.0.aarch64-linux.qcow2
-file format: qcow2
-virtual size: 2.6 GiB (2792493056 bytes)
-disk size: 1.19 GiB
-cluster_size: 65536
-Format specific information:
-    compat: 1.1
-    compression type: zstd
-    lazy refcounts: false
-    refcount bits: 16
-    corrupt: false
-    extended l2: false
-Child node '/file':
-    filename: guix-system-vm-image-1.5.0.aarch64-linux.qcow2
-    protocol type: file
-    file length: 1.18 GiB (1265827840 bytes)
-    disk size: 1.19 GiB
-$ qemu-img resize guix-system-vm-image-1.5.0.aarch64-linux.qcow2 +15G
-$ qemu-img info guix-system-vm-image-1.5.0.aarch64-linux.qcow2
-image: guix-system-vm-image-1.5.0.aarch64-linux.qcow2
-file format: qcow2
-virtual size: 17.6 GiB (18898620416 bytes)
-disk size: 1.22 GiB
-cluster_size: 65536
-Format specific information:
-    compat: 1.1
-    compression type: zstd
-    lazy refcounts: false
-    refcount bits: 16
-    corrupt: false
-    extended l2: false
-Child node '/file':
-    filename: guix-system-vm-image-1.5.0.aarch64-linux.qcow2
-    protocol type: file
-    file length: 1.21 GiB (1295384576 bytes)
-    disk size: 1.22 GiB
+On host (with VM stopped):
+
+```sh
+qemu-img resize guix-system-vm-image-1.5.0.aarch64-linux.qcow2 +15G
 ```
 
-guest:
+Virtual size went from 2.6 GiB to 17.6 GiB, file on disk stays ~1.2 GiB.
+
+In guest:
 
 ```
-# du -xh / --max-depth=2 2>/dev/null | sort -rh | head -30
-2.5G    /
-1.9G    /gnu/store
-1.9G    /gnu
-548M    /root/.cache
-548M    /root
-9.0M    /var
-8.3M    /var/guix
-3.9M    /run
-3.4M    /run/privileged
-512K    /run/udev
-452K    /var/db
-164K    /var/log
-88K     /etc
-44K     /var/run
-36K     /etc/ssh
-24K     /root/.config
-16K     /lost+found
-12K     /usr
-12K     /etc/guix
-12K     /boot
-8.0K    /var/lib
-8.0K    /usr/bin
-8.0K    /boot/grub
-8.0K    /bin
-4.0K    /var/tmp
-4.0K    /var/lock
-4.0K    /var/empty
-4.0K    /tmp
-4.0K    /run/setuid-programs
-4.0K    /mnt
-# rm -rf /root/.cache/guix
 # guix install parted
 # parted /dev/vda print
 Warning: Not all of the space available to /dev/vda appears to be used, you can
 fix the GPT to use all of the space (an extra 31457280 blocks) or continue with
 the current setting?
 Fix/Ignore? fix
-Model: Virtio Block Device (virtblk)
-Disk /dev/vda: 18.9GB
-Sector size (logical/physical): 512B/512B
-Partition Table: gpt
-Disk Flags:
-
+...
 Number  Start   End     Size    File system  Name        Flags
  1      1049kB  43.0MB  41.9MB  fat16        GNU-ESP     boot, esp
  2      43.0MB  2792MB  2749MB  ext4         Guix_image  legacy_boot
@@ -183,65 +159,18 @@ Number  Start   End     Size    File system  Name        Flags
 # resize2fs /dev/vda2
 # df -H
 Filesystem      Size  Used Avail Use% Mounted on
-none            4.2G     0  4.2G   0% /dev
 /dev/vda2        21G  2.0G   18G  10% /
-/dev/vda1        42M   11M   31M  26% /boot/efi
-guixshare       495G  452G   44G  92% /mnt/shared
-tmpfs           4.2G     0  4.2G   0% /dev/shm
-efivarfs        263k  2.1k  261k   1% /sys/firmware/efi/efivars
 ```
 
-## Clipboard, copy and paste
+### Shrink qcow2
 
-Works with `-nographic`. Does not work with GUI.
-
-## ssh and Host key verification failed
-
-Fingerprint of guest changed, so I am removing entries from `~/.ssh/known_hosts`:
+`qemu*.sh` already have `discard=unmap,detect-zeroes=unmap` in `-drive`. Without it `fstrim` in guest does not free space in qcow2 file:
 
 ```
-ssh-keygen -R '[localhost]:2222'; ssh-keygen -R '[127.0.0.1]:2222'
+-drive file=guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap
 ```
 
-- https://stackoverflow.com/questions/21383806/how-can-i-force-ssh-to-accept-a-new-host-fingerprint-from-the-command-line/53672867#53672867
-
-## Error during guix pull
-
-I have submitted https://codeberg.org/guix/guix/issues/9996
-
-Workaround is to add `--substitute-urls`.
-
-```guile
-(substitute-urls '("https://bordeaux.guix.gnu.org"))
-```
-
-## shutdown and reboot
-
-Just run `shutdown` or `reboot`.
-
-## reconfigure
-
-```
-time guix system reconfigure /mnt/shared/config.scm
-```
-
-Needed `--skip-check` for `9p`:
-
-```
-time guix system reconfigure --skip-checks /mnt/share/config.scm
-```
-
-## Boot into older generations
-
-`reboot` and choose in grub menu `GNU system, old configurations..`
-
-## Shrink qcow2
-
-`qemu.sh` already has `discard=unmap,detect-zeroes=unmap` in `-drive`. Without it `fstrim` in guest does not free space in qcow2 file:
-
-`-drive file=guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap`
-
-1. Start VM with `./qemu.sh` and in guest mount share (see Mount local directory into qemu instance).
+1. Start VM with `./qemu.sh`, share should be mounted at `/mnt/share` (see [Mount local directory into guest](#mount-local-directory-into-guest)).
 2. In guest run `/mnt/share/shrink-guest.sh` (or from host `ssh -p 2222 root@localhost /mnt/share/shrink-guest.sh`). It does:
    - `guix system delete-generations`, `guix package --delete-generations`, `guix pull --delete-generations`
    - `rm -rf /root/.cache`
@@ -260,40 +189,112 @@ Result for me: guest `/` from 28G to 2.4G (`guix gc: freed 46 GiB`), image file 
 
 After `fstrim` and `shutdown` image already takes less space on host (qcow2 file becomes sparse, `du -h image.qcow2`), convert compresses it and removes holes. Compression applies only to data written by convert, new writes from VM are not compressed, so image grows again. Then repeat.
 
-## SPICE on macOS from homebrew
+## Substitutes
 
-tldr; Use UTM as it supports SPICE on macOS out-of-the-box. Just qemu does not. SPICE is better than VNC. With UTM you will also get directory sharing with VirtFS and clipboard sharing. But you must change from default SPICE WebDAV to VirtFS for directory sharing in VM settings. To change what directory is shared you have to restart VM. Port Forwarding works in Emulated Mode.
+### Error during guix pull
 
-Look at `your vm > Edit > QEMU > Arguments` to see what arguments UTM pass to qemu.
+I have submitted https://codeberg.org/guix/guix/issues/9996
+
+Workaround is to set `substitute-urls` (in `config.scm` in `guix-configuration`, or `--substitute-urls` on command line):
+
+```scheme
+(substitute-urls '("https://bordeaux.guix.gnu.org"))
+```
+
+### Check mirrors
+
+`./test-mirrors.sh` measures connect time. `guix weather` shows how many substitutes are available:
+
+```sh
+guix weather --substitute-urls="https://bordeaux.guix.gnu.org"
+```
+
+Results for aarch64-linux (import `WARNING`s omitted):
+
+| Server | Substitutes available | Nars (compressed) |
+| --- | --- | --- |
+| https://bordeaux.guix.gnu.org | 95.2% (36,636 of 38,501) | 94,046.3 MiB |
+| https://hydra-guix-129.guix.gnu.org | 95.2% (36,639 of 38,504) | 88,054.0 MiB |
+
+bordeaux also returned `'https://bordeaux.guix.gnu.org/api/queue?nr=1000' returned 502 ("Bad Gateway")`, hydra-guix-129 `(continuous integration information unavailable)`.
+
+- https://libreplanet.org/wiki/Group:Guix/Mirrors
+
+## ssh: Host key verification failed
+
+Fingerprint of guest changed (e.g. after booting new image), so I am removing entries from `~/.ssh/known_hosts`:
+
+```sh
+ssh-keygen -R '[localhost]:2222'; ssh-keygen -R '[127.0.0.1]:2222'
+```
+
+- https://stackoverflow.com/questions/21383806/how-can-i-force-ssh-to-accept-a-new-host-fingerprint-from-the-command-line/53672867#53672867
+
+## ghostty
+
+To make it work better with ghostty, install `ncurses` package in guest, which gives `tic` program.
+
+Then on host:
+
+```sh
+infocmp -x xterm-ghostty | ssh -p 2222 root@localhost -- tic -x -
+```
+
+> the terminfo authors have deliberately chosen to ship their own version of the terminfo definition under a different name (ghostty instead of xterm-ghostty), with their own modifications that make it substantially different from our own terminfo definition, so it wouldn't even work out-of-the-box like what we had expected. https://github.com/ghostty-org/ghostty/discussions/8268#discussioncomment-16744849
+
+- https://ghostty.org/docs/help/terminfo
+
+## nginx
+
+Add `(listen '("90"))`, otherwise nginx will also listen on 443, and if you have no certbot set, starting will fail. Look at generated configuration in `/etc/nginx/nginx.conf` whether it listens on 443.
+
+- check configuration: `nginx -t -c /etc/nginx/nginx.conf`
+- check if nginx successfully started: `herd status nginx`
+- after changing nginx configuration: `herd reload nginx`
+- test serving http site: `curl localhost`
+
+Logs:
+
+```sh
+cat /var/log/nginx/access.log
+cat /var/log/nginx/error.log
+```
+
+- https://guix.gnu.org/manual/1.5.0/en/html_node/Web-Services.html
+
+## SPICE on macOS: use UTM
+
+tldr; Use UTM, as it supports SPICE on macOS out-of-the-box. Plain qemu from homebrew does not. SPICE is better than VNC. With UTM you also get directory sharing with VirtFS and clipboard sharing. But you must change from default SPICE WebDAV to VirtFS for directory sharing in VM settings. To change what directory is shared you have to restart VM. Port forwarding works in Emulated mode.
+
+Look at `your vm > Edit > QEMU > Arguments` to see what arguments UTM passes to qemu.
 
 ### Directory sharing
 
 `your vm > Edit > Sharing > Directory Share Mode > VirtFS`
 
-then in the guest:
+then in guest:
 
-```
+```sh
 mount -t 9p -o trans=virtio,version=9p2000.L,msize=104857600 share /mnt/share
 ```
 
 - UTM supports SPICE https://github.com/utmapp/UTM/blob/main/patches/spice-0.14.3.patch
 - https://docs.getutm.app/guest-support/linux/#macos-virtiofs
-- When using the QEMU backend, VirtFS is used instead, which does not use such a parent folder and requires restarting the VM to change shares iirc. https://news.ycombinator.com/item?id=36845869
-- Bind mounts and file sharing: It uses VirtioFS which isn't affected by sshfs consistency issues, plus caching and optimizations to give it an edge. https://news.ycombinator.com/item?id=36675039
-- https://docs.getutm.app/guest-support/linux/#macos-virtiofs
 - https://docs.getutm.app/settings-qemu/sharing/
 - https://docs.getutm.app/guest-support/sharing/directory/
+- When using the QEMU backend, VirtFS is used instead, which does not use such a parent folder and requires restarting the VM to change shares iirc. https://news.ycombinator.com/item?id=36845869
+- Bind mounts and file sharing: It uses VirtioFS which isn't affected by sshfs consistency issues, plus caching and optimizations to give it an edge. https://news.ycombinator.com/item?id=36675039
 
-### Port Forwarding:
+### Port forwarding
 
-Set Network Mode to Emulated VLAN (Shared Network) (sometimes labelled as “NAT”). Once you do that, a Port Forward option will appear below Network.
+Set Network Mode to Emulated VLAN (Shared Network) (sometimes labelled as "NAT"). Then a Port Forward option appears below Network.
 
 - https://dev.to/smyekh/completing-your-local-oci-lab-a-guide-to-port-forwarding-in-utm-hgp
 - https://docs.getutm.app/settings-qemu/devices/network/port-forwarding/
 
-### Potential alternatives to UTM which support SPICE
+### Alternatives to UTM with SPICE
 
-- qemu from homebrew does not support Spice. Even when build from source with `brew install --build-from-source qemu`. It does not have spice server, only spice protocol. QEMU needs the spice-protocol and spice-server library to compile with SPICE support. While the spice-protocol package is available for macOS, I can't seem to find a precompiled package of spice-server https://stackoverflow.com/questions/59636198/how-to-compile-qemu-with-spice-support-for-macos. Though there is possibility to have qemu with SPICE without UTM, but I have not tested it. https://github.com/avoidik/homebrew-qemu-spice and
+- qemu from homebrew does not support SPICE, even when built from source with `brew install --build-from-source qemu`. It has only spice protocol, not spice server. QEMU needs the spice-protocol and spice-server library to compile with SPICE support. While the spice-protocol package is available for macOS, I can't seem to find a precompiled package of spice-server https://stackoverflow.com/questions/59636198/how-to-compile-qemu-with-spice-support-for-macos. There is possibility to have qemu with SPICE without UTM, but I have not tested it: https://github.com/avoidik/homebrew-qemu-spice
   - You need to add a dependency on spice-server to qemu too https://github.com/orgs/Homebrew/discussions/5266#discussioncomment-9033465
 - https://github.com/jeffreywildman/homebrew-virt-manager
   - https://stackoverflow.com/questions/3921814/is-there-a-virt-manager-alternative-for-mac-os-x
@@ -303,92 +304,3 @@ Set Network Mode to Emulated VLAN (Shared Network) (sometimes labelled as “NAT
 - virt-manager and virsh https://johnsiu.com/blog/macos-kvm-remote-connect/
 - Connect to virtual machines using SPICE https://formulae.brew.sh/cask/remoteviewer
 - A homebrew tap for qemu with support for 3d accelerated guests https://github.com/startergo/homebrew-qemu-virgl
-
-## guix weather --substitute-urls
-
-```
-
-root@bootstrap /mnt/share# guix weather --substitute-urls="https://bordeaux.guix.gnu.org" WARNING: (gnu packages linux): `libcamera-minimal' imported from both (gnu packages networking) and (gnu packages photo)                                                    WARNING: (gnu packages code): `packcc' imported from both (gnu packages c) and (gnu packages compiler-tools) WARNING: (gnu packages chemistry): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
-WARNING: (gnu packages hardware): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
-WARNING: (gnu packages electronics): `orangeduck-mpc' imported from both (gnu packages c) and (gnu packages compiler-tools)
-computing 32,656 package derivations for aarch64-linux...
-looking for 38,501 store items on https://bordeaux.guix.gnu.org...
-https://bordeaux.guix.gnu.org ☀
-  95.2% substitutes available (36,636 out of 38,501)
-  at least 94,046.3 MiB of nars (compressed)
-  326,877.5 MiB on disk (uncompressed)
-  0.003 seconds per request (97.5 seconds in total)
-  394.9 requests per second
-  'https://bordeaux.guix.gnu.org/api/queue?nr=1000' returned 502 ("Bad Gateway")
-root@bootstrap /mnt/share# guix weather --substitute-urls="https://hydra-guix-129.guix.gnu.org/"
-WARNING: (gnu packages linux): `libcamera-minimal' imported from both (gnu packages networking) and (gnu packages photo)
-WARNING: (gnu packages code): `packcc' imported from both (gnu packages c) and (gnu packages compiler-tools)
-WARNING: (gnu packages chemistry): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
-WARNING: (gnu packages hardware): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
-WARNING: (gnu packages electronics): `orangeduck-mpc' imported from both (gnu packages c) and (gnu packages compiler-tools)
-computing 32,657 package derivations for aarch64-linux...
-looking for 38,504 store items on https://hydra-guix-129.guix.gnu.org/...
-https://hydra-guix-129.guix.gnu.org/ ☀
-95.2% substitutes available (36,639 out of 38,504)
-88,054.0 MiB of nars (compressed)
-326,958.2 MiB on disk (uncompressed)
-0.002 seconds per request (62.1 seconds in total)
-620.2 requests per second
-(continuous integration information unavailable)
-root@bootstrap /mnt/share# guix weather --substitute-urls="https://hydra-guix-129.guix.gnu.org/"
-WARNING: (gnu packages linux): `libcamera-minimal' imported from both (gnu packages networking) and (gnu packages photo)
-WARNING: (gnu packages code): `packcc' imported from both (gnu packages c) and (gnu packages compiler-tools)
-WARNING: (gnu packages chemistry): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
-WARNING: (gnu packages hardware): `pegtl' imported from both (gnu packages cpp) and (gnu packages compiler-tools)
-WARNING: (gnu packages electronics): `orangeduck-mpc' imported from both (gnu packages c) and (gnu packages compiler-tools)
-computing 32,657 package derivations for aarch64-linux...
-looking for 38,504 store items on https://hydra-guix-129.guix.gnu.org/...
-https://hydra-guix-129.guix.gnu.org/ ☀
-95.2% substitutes available (36,639 out of 38,504)
-88,054.0 MiB of nars (compressed)
-326,958.2 MiB on disk (uncompressed)
-0.002 seconds per request (62.1 seconds in total)
-620.2 requests per second
-(continuous integration information unavailable)
-
-```
-
-- https://libreplanet.org/wiki/Group:Guix/Mirrors
-
-## ghostty
-
-To make it better work with ghostty, we need to install ncurses package on guix, which gives tic program.
-
-Then on host we do `infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -`.
-
-> the terminfo authors have deliberately chosen to ship their own version of the terminfo definition under a different name (ghostty instead of xterm-ghostty), with their own modifications that make it substantially different from our own terminfo definition, so it wouldn't even work out-of-the-box like what we had expected. https://github.com/ghostty-org/ghostty/discussions/8268#discussioncomment-16744849
-
-- https://ghostty.org/docs/help/terminfo
-
-## nginx
-
-add `(listen '("90"))`, otherwise nginx will also listen on on 443, and if you have no certbot set, starting will fail. Look at generated configuration at `/etc/nginx/nginx.conf` if there is listen on 443 port.
-
-Check configuration with `nginx -t -c /etc/nginx/nginx.conf`.
-
-`herd status nginx` to check if nginx successfuly started.
-
-After nginx is started, if you change something in nginx configuration you need to run `herd reload nginx`.
-
-You may test serving http site with `curl localhost`.
-
-check logs:
-
-```
-cat /var/log/nginx/access.log
-cat /var/log/nginx/error.log
-```
-
-- https://guix.gnu.org/manual/1.5.0/en/html_node/Web-Services.html
-
-## find in what module package is
-
-```
-guix show ncurses | grep location
-guix package -A ncurses
-```
