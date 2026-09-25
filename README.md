@@ -237,19 +237,28 @@ time guix system reconfigure --skip-checks /mnt/share/config.scm
 
 ## Shrink qcow2
 
-You need to add `discard=unmap,detect-zeroes=unmap` to qemu params:
+`qemu.sh` already has `discard=unmap,detect-zeroes=unmap` in `-drive`. Without it `fstrim` in guest does not free space in qcow2 file:
 
-`-drive file=guix-system-vm-image-1.5.0.aarch64-linux.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap`
+`-drive file=guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap`
 
-on guest:
+1. Start VM with `./qemu.sh` and in guest mount share (see Mount local directory into qemu instance).
+2. In guest run `/mnt/share/shrink-guest.sh` (or from host `ssh -p 2222 root@localhost /mnt/share/shrink-guest.sh`). It does:
+   - `guix system delete-generations`, `guix package --delete-generations`, `guix pull --delete-generations`
+   - `rm -rf /root/.cache`
+   - `guix gc`
+   - `sync` and `fstrim -av`, so freed blocks are discarded in qcow2
+3. `shutdown` in guest.
+4. On host run `./shrink-qcow2.sh`. It writes `<image>-shrinked.qcow2` next to image, original is kept. Or run `./shrink-qcow2.sh --in-place` to replace image (symlink `*-modified.qcow2` still works). Other image: `./shrink-qcow2.sh [--in-place] path/to/image.qcow2`. It does:
+   - refuses if image has internal snapshots (convert would drop them)
+   - `qemu-img convert -O qcow2 -c -o compression_type=zstd` (default would be zlib)
+   - `qemu-img check` on the result
+   - keeps permissions of original (600)
 
-`/mnt/share/shrink-guest.sh` and then `shutdown`
+Deleting generations is irreversible, there will be no older systems in grub `GNU system, old configurations...`.
 
-on host:
+Result for me: guest `/` from 28G to 2.4G (`guix gc: freed 46 GiB`), image file from 31G to 915M.
 
-`./shrink-qcow2.sh` (writes `*-shrinked.qcow2` next to image) or `./shrink-qcow2.sh --in-place` (replaces image, symlink is kept).
-
-It does `qemu-img convert -O qcow2 -c image.qcow2 shrinked.qcow2`.
+After `fstrim` and `shutdown` image already takes less space on host (qcow2 file becomes sparse, `du -h image.qcow2`), convert compresses it and removes holes. Compression applies only to data written by convert, new writes from VM are not compressed, so image grows again. Then repeat.
 
 ## SPICE on macOS from homebrew
 
