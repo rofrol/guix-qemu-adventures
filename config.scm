@@ -28,9 +28,6 @@
   (initrd-modules (cons* "sd_mod" "sr_mod" %base-initrd-modules))
 
   (bootloader (bootloader-configuration
-                (theme (grub-theme (image #f))) ;skip SVG->PNG conversion: reconfigure was building entire Rust bootstrap
-                ;; (guile-rsvg -> librsvg -> rust). bordeaux.guix.gnu.org lacks aarch64
-                ;; substitutes for these; building 20+ Rust versions from source fails
                 (bootloader grub-efi-bootloader)
                 (targets '("/boot/efi"))
                 (terminal-outputs '(console))))
@@ -59,12 +56,7 @@
   ;; Packages installed system-wide.  Users can also install packages
   ;; under their own account: use 'guix search KEYWORD' to search
   ;; for packages and 'guix install PACKAGE' to install a package.
-  (packages (append (specifications->packages (list "curl"
-                                                    ;; neovim commented out: needs tree-sitter-c -> tree-sitter-cli -> rust
-                                                    ;; bootstrap (20+ versions). bordeaux.guix.gnu.org provides 0% aarch64
-                                                    ;; substitutes; building from source times out. install separately:
-                                                    ;; `guix install neovim` (if substitutes become available)
-                                                    ;; "neovim"
+  (packages (append (specifications->packages (list "neovim" "curl"
                                                     ;; ncurses needed for tic, which is needed to upload terminfo from ghostty
                                                     ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
                                                     "ncurses")) %base-packages))
