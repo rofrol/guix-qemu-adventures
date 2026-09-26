@@ -11,7 +11,7 @@ qemu-system-aarch64 \
 	-netdev user,id=vmnic \
 	-nographic \
 	-virtfs local,path=$PWD,security_model=mapped,id=share,mount_tag=share \
-	-nic user,hostfwd=tcp::2222-:2222 \
+	-nic user,hostfwd=tcp::2224-:2224 \
 	-device qemu-xhci \
 	-device usb-kbd \
 	-device usb-tablet

@@ -6,9 +6,9 @@ My adventures running a Guix System aarch64 qcow2 image with QEMU on macOS (Appl
 
 | File | What it is |
 | --- | --- |
-| `qemu.sh` | run VM headless (`-nographic`), ssh on port 2222 |
+| `qemu.sh` | run VM headless (`-nographic`), ssh on port 2224 |
 | `qemu-desktop.sh` | run VM with GUI (cocoa display), ssh on port 2223 |
-| `config.scm` | system config for headless VM (sshd on 2222, 9p share at `/mnt/share`, substitute urls) |
+| `config.scm` | system config for headless VM (sshd on 2224, 9p share at `/mnt/share`, substitute urls) |
 | `config-desktop.scm` | system config for desktop VM (sshd on 2223, SPICE) |
 | `reconfigure.sh` | run in guest: stop if a package without substitutes would be compiled, else build and reconfigure system from `/mnt/share/config.scm` (see [Reconfigure](#reconfigure)) |
 | `shrink-guest.sh` | run in guest: delete generations, gc, fstrim (see [Shrink qcow2](#shrink-qcow2)) |
@@ -35,7 +35,7 @@ Then replace hardcoded public key in `openssh-configuration` in `config.scm` (an
 
 ```sh
 ./qemu.sh
-ssh -i ~/.ssh/guix_guest_ed25519 -p 2222 root@localhost
+ssh -i ~/.ssh/guix_guest_ed25519 -p 2224 root@localhost
 ```
 
 Or add to `~/.ssh/config` (not `Host localhost`, as it would apply to every ssh to localhost):
@@ -43,7 +43,7 @@ Or add to `~/.ssh/config` (not `Host localhost`, as it would apply to every ssh 
 ```
 Host guix-vm
     HostName localhost
-    Port 2222
+    Port 2224
     User root
     IdentityFile ~/.ssh/guix_guest_ed25519
     IdentitiesOnly yes
@@ -173,7 +173,7 @@ Filesystem      Size  Used Avail Use% Mounted on
 ```
 
 1. Start VM with `./qemu.sh`, share should be mounted at `/mnt/share` (see [Mount local directory into guest](#mount-local-directory-into-guest)).
-2. In guest run `/mnt/share/shrink-guest.sh` (or from host `ssh -p 2222 root@localhost /mnt/share/shrink-guest.sh`). It does:
+2. In guest run `/mnt/share/shrink-guest.sh` (or from host `ssh -p 2224 root@localhost /mnt/share/shrink-guest.sh`). It does:
    - `guix system delete-generations`, `guix package --delete-generations`, `guix pull --delete-generations`
    - `rm -rf /root/.cache`
    - `guix gc`
@@ -227,7 +227,7 @@ bordeaux also returned `'https://bordeaux.guix.gnu.org/api/queue?nr=1000' return
 Fingerprint of guest changed (e.g. after booting new image), so I am removing entries from `~/.ssh/known_hosts`:
 
 ```sh
-ssh-keygen -R '[localhost]:2222'; ssh-keygen -R '[127.0.0.1]:2222'
+ssh-keygen -R '[localhost]:2224'; ssh-keygen -R '[127.0.0.1]:2224'
 ```
 
 - https://stackoverflow.com/questions/21383806/how-can-i-force-ssh-to-accept-a-new-host-fingerprint-from-the-command-line/53672867#53672867
@@ -239,7 +239,7 @@ To make it work better with ghostty, install `ncurses` package in guest, which g
 Then on host:
 
 ```sh
-infocmp -x xterm-ghostty | ssh -p 2222 root@localhost -- tic -x -
+infocmp -x xterm-ghostty | ssh -p 2224 root@localhost -- tic -x -
 ```
 
 > the terminfo authors have deliberately chosen to ship their own version of the terminfo definition under a different name (ghostty instead of xterm-ghostty), with their own modifications that make it substantially different from our own terminfo definition, so it wouldn't even work out-of-the-box like what we had expected. https://github.com/ghostty-org/ghostty/discussions/8268#discussioncomment-16744849

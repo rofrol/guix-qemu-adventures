@@ -107,7 +107,7 @@ Run '[1;37minfo guix[0m' to browse documentation.
                                                     "curl"
                                                     "icecat"
                                                     ;; ncurses needed for tic, which is needed to upload terminfo from ghostty
-                                                    ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
+                                                    ;; infocmp -x xterm-ghostty | ssh -p 2223 localhost -- tic -x -
                                                     "ncurses")) %base-packages))
 
   (services

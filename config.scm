@@ -58,7 +58,7 @@
   ;; for packages and 'guix install PACKAGE' to install a package.
   (packages (append (specifications->packages (list "neovim" "curl"
                                                     ;; ncurses needed for tic, which is needed to upload terminfo from ghostty
-                                                    ;; infocmp -x xterm-ghostty | ssh -p 2222 localhost -- tic -x -
+                                                    ;; infocmp -x xterm-ghostty | ssh -p 2224 localhost -- tic -x -
                                                     "ncurses")) %base-packages))
   (services
    (cons* (service dhcpcd-service-type)
@@ -74,7 +74,7 @@
 
           (service openssh-service-type
                    (openssh-configuration (openssh openssh-sans-x)
-                                          (port-number 2222)
+                                          (port-number 2224)
                                           (password-authentication? #f)
                                           (permit-root-login 'prohibit-password)
                                           ;; /etc/ssh/authorized_keys.d/root
