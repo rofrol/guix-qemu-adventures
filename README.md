@@ -10,7 +10,7 @@ My adventures running a Guix System aarch64 qcow2 image with QEMU on macOS (Appl
 | `qemu-desktop.sh` | run VM with GUI (cocoa display), ssh on port 2223 |
 | `config.scm` | system config for headless VM (sshd on 2222, 9p share at `/mnt/share`, substitute urls) |
 | `config-desktop.scm` | system config for desktop VM (sshd on 2223, SPICE) |
-| `reconfigure.sh` | run in guest: check substitutes, build and reconfigure system from `/mnt/share/config.scm` |
+| `reconfigure.sh` | run in guest: stop if a package without substitutes would be compiled, else build and reconfigure system from `/mnt/share/config.scm` (see [Reconfigure](#reconfigure)) |
 | `shrink-guest.sh` | run in guest: delete generations, gc, fstrim (see [Shrink qcow2](#shrink-qcow2)) |
 | `shrink-qcow2.sh` | run on host: recompress qcow2 (see [Shrink qcow2](#shrink-qcow2)) |
 | `test-mirrors.sh` | measure connect time to substitute servers |
@@ -78,7 +78,9 @@ mount -t 9p -o trans=virtio,version=9p2000.L share /mnt/share
 time guix system reconfigure --skip-checks /mnt/share/config.scm
 ```
 
-`--skip-checks` is needed for `9p` file system. Or run `/mnt/share/reconfigure.sh`.
+`--skip-checks` is needed for `9p` file system. Or run `/mnt/share/reconfigure.sh`, which first checks that nothing big would be compiled.
+
+`guix weather` can say all substitutes are there and reconfigure still compiles LLVM: it checks package outputs, not inputs of the system's local derivations (e.g. `grub-theme` image is converted from SVG with `guile-rsvg`, which needs librsvg, so Rust, so LLVM). `reconfigure.sh` runs `guix system reconfigure -n --no-grafts` first (with grafts the dry run lists only downloads, no builds) and stops, listing what would be built, if anything besides derivations marked `preferLocalBuild` (config files, profile hooks, grafts, GRUB image) has no substitute. Otherwise it builds and reconfigures. It is best effort: graft replacement packages are not checked, and a substitute can disappear between the check and the real run.
 
 Current config is then in `/run/current-system/configuration.scm`.
 
