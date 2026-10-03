@@ -1,8 +1,10 @@
+# images live outside the repo, see README
+IMAGES_DIR="${IMAGES_DIR:-../images}"
 qemu-system-aarch64 \
 	-M virt,highmem=on \
 	-accel hvf \
 	-m 8G \
-	-drive file=guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap \
+	-drive file="$IMAGES_DIR"/guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap \
 	-device virtio-scsi-device \
 	-bios "$(brew --prefix qemu)/share/qemu/edk2-aarch64-code.fd" \
 	-cpu host \

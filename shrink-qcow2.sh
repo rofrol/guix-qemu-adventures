@@ -9,7 +9,7 @@ if [ "${1:-}" = "--in-place" ]; then
 	shift
 fi
 
-image="${1:-guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2}"
+image="${1:-${IMAGES_DIR:-../images}/guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2}"
 # resolve symlink, so --in-place replaces the real file and keeps the symlink
 real="$(realpath "$image")"
 out="${real%.qcow2}-shrinked.qcow2"

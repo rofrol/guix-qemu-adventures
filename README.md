@@ -15,7 +15,9 @@ My adventures running a Guix System aarch64 qcow2 image with QEMU on macOS (Appl
 | `shrink-qcow2.sh` | run on host: recompress qcow2 (see [Shrink qcow2](#shrink-qcow2)) |
 | `test-mirrors.sh` | measure connect time to substitute servers |
 
-Both `qemu*.sh` run `guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2`. For me it is a symlink to image built with `config.scm` (see [Build image](#build-image)). For a start you can point it to official image.
+Images are kept outside the repo, in `../images` (override with `IMAGES_DIR`), so ignored multi-GB files and VM disks with private data never sit in this public repo. Run the scripts from the repo directory.
+
+Both `qemu*.sh` run `$IMAGES_DIR/guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2`. For me it is a symlink to image built with `config.scm` (see [Build image](#build-image)). For a start you can point it to official image.
 
 ## Quick start
 
@@ -23,7 +25,7 @@ Both `qemu*.sh` run `guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2`. F
 brew install qemu
 ```
 
-Download qcow2 image from https://guix.gnu.org/en/download/.
+Download qcow2 image from https://guix.gnu.org/en/download/ into `../images` (`mkdir -m 700 ../images`).
 
 Generate ssh key:
 
@@ -96,7 +98,7 @@ Below can take 18 minutes:
 cp "$(time guix system image -t qcow2-gpt --save-provenance --image-size=20G /mnt/share/config.scm)" /mnt/share
 ```
 
-You cannot `mv`, there would be error like `rm: cannot remove '/gnu/store/p4jlybc6fwmfl70izb1a4wf994rammrp-image.qcow2': Read-only file system`.
+Then on host move it from the repo directory to `../images`. You cannot `mv` in guest, there would be error like `rm: cannot remove '/gnu/store/p4jlybc6fwmfl70izb1a4wf994rammrp-image.qcow2': Read-only file system`.
 
 `--image-size` is important because official qcow2 has max 2.6 GB. Check it with `qemu-img info image.qcow2`.
 
@@ -138,7 +140,7 @@ rm -rf /root/.cache/guix
 On host (with VM stopped):
 
 ```sh
-qemu-img resize guix-system-vm-image-1.5.0.aarch64-linux.qcow2 +15G
+qemu-img resize ../images/guix-system-vm-image-1.5.0.aarch64-linux.qcow2 +15G
 ```
 
 Virtual size went from 2.6 GiB to 17.6 GiB, file on disk stays ~1.2 GiB.
@@ -169,7 +171,7 @@ Filesystem      Size  Used Avail Use% Mounted on
 `qemu*.sh` already have `discard=unmap,detect-zeroes=unmap` in `-drive`. Without it `fstrim` in guest does not free space in qcow2 file:
 
 ```
--drive file=guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap
+-drive file="$IMAGES_DIR"/guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2,media=disk,if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap
 ```
 
 1. Start VM with `./qemu.sh`, share should be mounted at `/mnt/share` (see [Mount local directory into guest](#mount-local-directory-into-guest)).
