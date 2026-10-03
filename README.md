@@ -17,6 +17,8 @@ My adventures running a Guix System aarch64 qcow2 image with QEMU on macOS (Appl
 
 Images are kept outside the repo, in `../images` (override with `IMAGES_DIR`), so ignored multi-GB files and VM disks with private data never sit in this public repo. Run the scripts from the repo directory.
 
+`../images` is excluded from Time Machine (`tmutil addexclusion`, check with `tmutil isexcluded`) and from Spotlight (empty `.metadata_never_index` file inside), because a VM disk there holds copies of production data. So Time Machine does not back up these images: upstream images can be downloaded again, but disks you changed (`*-modified.qcow2`, VM overlays) need their own backup.
+
 Both `qemu*.sh` run `$IMAGES_DIR/guix-system-vm-image-1.5.0.aarch64-linux-modified.qcow2`. For me it is a symlink to image built with `config.scm` (see [Build image](#build-image)). For a start you can point it to official image.
 
 ## Quick start
